@@ -8,4 +8,9 @@ public class WaterGlass
         this.waterHeight = waterHeight;
         this.cupHeight = cupHeight;
     }
+
+    public float Remain()
+    {
+        return cupHeight - waterHeight;
+    }
 }
