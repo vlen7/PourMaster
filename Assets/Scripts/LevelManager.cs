@@ -1,39 +1,88 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 public class LevelManager : Singleton<LevelManager>
 {
     [SerializeField] private GameObject waterGlassPrefab;
     [SerializeField] private GameObject waterGlassPool;
+    [SerializeField] private GameObject nextButton;
+    [SerializeField] private TextMeshProUGUI goalText;
 
-    private Dictionary<int, WaterGlass[]> levelMap = new();
-    private List<GameObject> glasses = new();
-    private int level = 0;
+    private readonly List<GameObject> _glasses = new();
+    private WaterGlassDisplay _selectedGlass;
 
-    private WaterGlassDisplay selectedGlass;
-
-
-    private void Awake()
+    private void Start()
     {
-        levelMap.Add(1, new WaterGlass[] { new(3, 10), new(1, 5) });
-        levelMap.Add(2, new WaterGlass[] { new(3, 3), new(4, 4) });
-        levelMap.Add(3, new WaterGlass[] { new(5, 5), new(6, 6) });
-        levelMap.Add(4, new WaterGlass[] { new(7, 7), new(8, 8) });
+        InitGlass();
+    }
+
+    private void Update()
+    {
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) // 检测鼠标左键点击
+        {
+            if (!EventSystem.current.IsPointerOverGameObject())
+            {
+                if (_selectedGlass)
+                {
+                    _selectedGlass.ShowGlass();
+                    _selectedGlass = null;
+                }
+            }
+        }
+    }
+
+
+    public void InitGlass()
+    {
+        ClearPool();
+        var waterGlasses = Conf.Instance.GetLevelSetting();
+        for (var i = 0; i < waterGlasses.Count; i++)
+        {
+            var glass = Instantiate(waterGlassPrefab, waterGlassPool.transform, true);
+            glass.name = $"WaterGlass {Conf.Instance.level}-{i}-{Random.Range(0, 100)}";
+            glass.GetComponent<WaterGlassDisplay>().waterGlass = waterGlasses[i];
+            _glasses.Add(glass);
+        }
+
+        goalText.text = $"目标: {Conf.Instance.GetGoal()}";
+
+        nextButton.SetActive(false);
     }
 
     public void SetSelectedGlass(WaterGlassDisplay glass)
     {
-        if (!selectedGlass)
+        if (!_selectedGlass)
         {
-            selectedGlass = glass;
-            selectedGlass.transform.localScale *= 1.1f;
+            _selectedGlass = glass;
+            _selectedGlass.transform.localScale *= 1.1f;
         }
         else
         {
-            Pour(selectedGlass, glass);
-            selectedGlass = null;
+            Pour(_selectedGlass, glass);
+            _selectedGlass = null;
         }
+
+        if (CheckPass())
+        {
+            nextButton.SetActive(true);
+        }
+    }
+
+    private bool CheckPass()
+    {
+        var goal = Conf.Instance.GetGoal();
+        foreach (var glass in _glasses)
+        {
+            var waterGlass = glass.GetComponent<WaterGlassDisplay>().waterGlass;
+            if (Mathf.Approximately(waterGlass.waterHeight, goal)) return true;
+        }
+
+        return false;
     }
 
     private void Pour(WaterGlassDisplay from, WaterGlassDisplay to)
@@ -46,22 +95,17 @@ public class LevelManager : Singleton<LevelManager>
 
     public void NextLevel()
     {
-        ClearPool();
-        level++;
-        var waterGlasses = levelMap[level];
-        foreach (var waterGlass in waterGlasses)
-        {
-            var glass = Instantiate(waterGlassPrefab, waterGlassPool.transform, true);
-            glass.GetComponent<WaterGlassDisplay>().waterGlass = waterGlass;
-            glasses.Add(glass);
-        }
+        Conf.Instance.NextLevel();
+        InitGlass();
     }
 
     private void ClearPool()
     {
-        foreach (var glass in glasses)
+        foreach (var glass in _glasses)
         {
             Destroy(glass);
         }
+
+        _glasses.Clear();
     }
 }

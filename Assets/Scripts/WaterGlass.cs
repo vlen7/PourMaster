@@ -13,4 +13,9 @@ public class WaterGlass
     {
         return cupHeight - waterHeight;
     }
+
+    public WaterGlass DeepCopy()
+    {
+        return new WaterGlass(waterHeight: waterHeight, cupHeight: cupHeight);
+    }
 }

@@ -28,12 +28,12 @@ public class WaterGlassDisplay : MonoBehaviour, IPointerClickHandler
     {
     }
 
-    private void ShowGlass()
+    public void ShowGlass()
     {
         var cupScale = 1 + (waterGlass.cupHeight / 5);
         transform.localScale = new Vector2(cupScale, cupScale);
         var childWater = transform.Find("Water");
-        childWater.transform.localScale = new Vector2(1, waterGlass.waterHeight/waterGlass.cupHeight);
+        childWater.transform.localScale = new Vector2(1, waterGlass.waterHeight / waterGlass.cupHeight);
         number.text = $"{waterGlass.waterHeight}/{waterGlass.cupHeight}";
     }
 
